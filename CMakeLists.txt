@@ -48,4 +48,4 @@ function(add_cuda_benchmark target_name source_file)
 endfunction()
 
 add_cuda_benchmark(vector_add_bench benchmarks/vector_add_bench.cu)
-
+add_cuda_benchmark(matmul_bench benchmarks/matmul_bench.cu)

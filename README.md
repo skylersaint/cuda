@@ -8,6 +8,7 @@
 .
 ├── benchmarks/
 │   ├── benchmark_template.cu
+│   ├── matmul_bench.cu
 │   └── vector_add_bench.cu
 ├── CMakeLists.txt
 ├── CMakePresets.json
@@ -41,6 +42,12 @@
 cmake --preset release
 cmake --build --preset release
 ./build/release/bin/vector_add_bench
+```
+
+也可以直接跑 `matmul` baseline：
+
+```bash
+./build/release/bin/matmul_bench --m 1024 --n 1024 --k 1024 --tile 16 --warmup 10 --iters 50
 ```
 
 如果你要为 Nsight Compute 准备一个更友好的构建目录：
@@ -92,12 +99,29 @@ cmake --build build/sm80
 - `--iters <N>`: 正式计时次数
 - `--no-check`: 跳过结果校验
 
+`matmul_bench` 支持参数：
+
+- `--m <M>`: 输出矩阵行数
+- `--n <N>`: 输出矩阵列数
+- `--k <K>`: 归约维度
+- `--tile <T>`: tile 大小，同时也是 `blockDim.x == blockDim.y`
+- `--warmup <N>`: warmup 次数
+- `--iters <N>`: 正式计时次数
+- `--no-check`: 跳过结果校验
+
 ## 使用 Nsight Compute
 
 最简单的方式：
 
 ```bash
 ./scripts/profile_ncu.sh ./build/release/bin/vector_add_bench --elements 16777216 --iters 50
+```
+
+profile `matmul` 时推荐这样起步：
+
+```bash
+./scripts/profile_ncu.sh ./build/profile/bin/matmul_bench \
+  --m 2048 --n 2048 --k 2048 --tile 16 --warmup 10 --iters 20
 ```
 
 脚本会：
@@ -122,6 +146,7 @@ ncu --set full --kernel-name regex:vector_add_kernel \
 - `ncu` 再用 `--launch-skip` 跳过早期 kernel launch
 - 用 `-lineinfo` 构建，这样 source view 更清晰
 - 先看 `SpeedOfLight`、occupancy、memory throughput，再决定往计算还是访存优化
+- 看 `matmul` 时顺手关注 shared memory 利用、SM busy、tensor core 是否未被使用
 
 ## 如何新增自己的 kernel benchmark
 
@@ -156,7 +181,7 @@ cmake --build --preset release
 ## 后续建议
 
 - 增加 `matmul/softmax/reduction` 等真实 kernel case
+- 当前已经有 shared-memory tiled `matmul` baseline，可以继续加 naive / vectorized / WMMA 版本做横向对比
 - 按 kernel 类型拆子目录，例如 `benchmarks/memory/`、`benchmarks/reduction/`
 - 增加一个统一脚本批量跑 benchmark 并落盘 CSV
 - 后面如果你愿意，我可以继续帮你补一个更系统的 `results/` 输出格式和 roofline-friendly 指标汇总
-
