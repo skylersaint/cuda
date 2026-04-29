@@ -17,6 +17,7 @@
 │   ├── cuda_benchmark.cuh
 │   └── cuda_utils.cuh
 ├── scripts/
+│   ├── inspect_kernel.sh
 │   ├── generate_ptx.sh
 │   ├── generate_sass.sh
 │   ├── profile_ncu.sh
@@ -193,6 +194,36 @@ cmake --build build/ptx --target vector_add_bench_cubin
 - 优先使用 `nvdisasm -g` 生成带源码位置信息的 SASS
 - 如果没有 `nvdisasm`，回退到 `cuobjdump --dump-sass`
 - 适合把源码、PTX、SASS 和 `ncu` 报告对着看
+
+## 一键检查工作流
+
+如果你想把 benchmark、PTX、SASS、Nsight Compute 串起来，直接用：
+
+```bash
+./scripts/inspect_kernel.sh build/profile matmul_bench \
+  -- --m 2048 --n 2048 --k 2048 --tile 16 --warmup 10 --iters 20
+```
+
+这个脚本会按顺序尝试：
+
+- build benchmark
+- 运行 benchmark
+- 生成 PTX
+- 生成 SASS
+- 如果机器上有 `ncu`，再跑 Nsight Compute
+
+常见变体：
+
+```bash
+./scripts/inspect_kernel.sh build/ptx matmul_bench --skip-ncu -- --m 1024 --n 1024 --k 1024
+./scripts/inspect_kernel.sh build/profile matmul_bench --skip-sass -- --m 2048 --n 2048 --k 2048
+```
+
+说明：
+
+- `--` 后面的参数会原样传给 benchmark
+- 默认要求对应 build 目录已经 configure 过
+- 如果需要，也可以先加 `--configure` 或 `--configure-preset profile`
 
 ## 使用 Nsight Compute
 
