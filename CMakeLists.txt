@@ -18,6 +18,7 @@ endif()
 
 option(CUDA_ENABLE_FAST_MATH "Enable --use_fast_math for CUDA targets" OFF)
 option(CUDA_ENABLE_LINEINFO "Enable -lineinfo for Nsight Compute correlation" ON)
+set(CUDA_PTX_ARCHITECTURE "" CACHE STRING "Optional SM architecture for explicit PTX generation, for example 80 or 90")
 
 add_library(cuda_project_options INTERFACE)
 target_compile_options(cuda_project_options INTERFACE
@@ -47,5 +48,41 @@ function(add_cuda_benchmark target_name source_file)
   )
 endfunction()
 
+function(add_cuda_ptx_target target_name source_file)
+  set(ptx_output_dir "${CMAKE_BINARY_DIR}/ptx")
+  set(ptx_output_file "${ptx_output_dir}/${target_name}.ptx")
+  set(ptx_flags
+    --ptx
+    --std=c++17
+    --expt-relaxed-constexpr
+    -I${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+
+  if(CUDA_ENABLE_FAST_MATH)
+    list(APPEND ptx_flags --use_fast_math)
+  endif()
+
+  if(CUDA_ENABLE_LINEINFO)
+    list(APPEND ptx_flags -lineinfo)
+  endif()
+
+  if(CUDA_PTX_ARCHITECTURE)
+    list(APPEND ptx_flags -arch=sm_${CUDA_PTX_ARCHITECTURE})
+  endif()
+
+  add_custom_command(
+    OUTPUT ${ptx_output_file}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${ptx_output_dir}
+    COMMAND ${CMAKE_CUDA_COMPILER} ${ptx_flags} ${CMAKE_CURRENT_SOURCE_DIR}/${source_file} -o ${ptx_output_file}
+    DEPENDS ${source_file}
+    VERBATIM
+    COMMENT "Generating PTX for ${target_name}"
+  )
+
+  add_custom_target(${target_name}_ptx DEPENDS ${ptx_output_file})
+endfunction()
+
 add_cuda_benchmark(vector_add_bench benchmarks/vector_add_bench.cu)
 add_cuda_benchmark(matmul_bench benchmarks/matmul_bench.cu)
+add_cuda_ptx_target(vector_add_bench benchmarks/vector_add_bench.cu)
+add_cuda_ptx_target(matmul_bench benchmarks/matmul_bench.cu)

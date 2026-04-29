@@ -17,6 +17,7 @@
 │   ├── cuda_benchmark.cuh
 │   └── cuda_utils.cuh
 ├── scripts/
+│   ├── generate_ptx.sh
 │   ├── profile_ncu.sh
 │   └── run_benchmark.sh
 └── README.md
@@ -56,6 +57,16 @@ cmake --build --preset release
 cmake --preset profile
 cmake --build --preset profile
 ./build/profile/bin/vector_add_bench
+```
+
+如果你也希望后面直接查看 PTX，推荐在 configure 时显式指定架构：
+
+```bash
+cmake -S . -B build/ptx -G Ninja \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCMAKE_CUDA_ARCHITECTURES=80 \
+  -DCUDA_PTX_ARCHITECTURE=80
+cmake --build build/ptx
 ```
 
 ## 常用构建方式
@@ -108,6 +119,42 @@ cmake --build build/sm80
 - `--warmup <N>`: warmup 次数
 - `--iters <N>`: 正式计时次数
 - `--no-check`: 跳过结果校验
+
+## 生成 PTX
+
+每个 benchmark 都会自动带一个同名的 PTX target：
+
+- `vector_add_bench_ptx`
+- `matmul_bench_ptx`
+
+例如生成 `matmul` 的 PTX：
+
+```bash
+cmake -S . -B build/ptx -G Ninja \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCMAKE_CUDA_ARCHITECTURES=80 \
+  -DCUDA_PTX_ARCHITECTURE=80
+./scripts/generate_ptx.sh build/ptx matmul_bench
+```
+
+生成结果默认在：
+
+```text
+build/ptx/ptx/matmul_bench.ptx
+```
+
+你也可以直接用 CMake target：
+
+```bash
+cmake --build build/ptx --target matmul_bench_ptx
+cmake --build build/ptx --target vector_add_bench_ptx
+```
+
+建议：
+
+- 看 PTX 时尽量显式指定 `CUDA_PTX_ARCHITECTURE`
+- 和 `-lineinfo` 一起用，方便把 PTX、源码和 `ncu` 结果对上
+- 如果后面你要看更底层的机器码，再补 `cuobjdump` / `nvdisasm` 工作流
 
 ## 使用 Nsight Compute
 
