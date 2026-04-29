@@ -19,3 +19,14 @@ inline int div_up(int value, int divisor) {
   return (value + divisor - 1) / divisor;
 }
 
+inline int current_cuda_device() {
+  int device = 0;
+  CUDA_CHECK(cudaGetDevice(&device));
+  return device;
+}
+
+inline cudaDeviceProp cuda_device_properties(int device) {
+  cudaDeviceProp properties{};
+  CUDA_CHECK(cudaGetDeviceProperties(&properties, device));
+  return properties;
+}

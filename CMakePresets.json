@@ -13,7 +13,8 @@
       "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CUDA_ARCHITECTURES": "native"
+        "CMAKE_CUDA_ARCHITECTURES": "native",
+        "CUDA_ENABLE_LINEINFO": "ON"
       }
     },
     {
@@ -23,6 +24,16 @@
       "binaryDir": "${sourceDir}/build/debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "profile",
+      "displayName": "RelWithDebInfo for Profiling",
+      "inherits": "release",
+      "binaryDir": "${sourceDir}/build/profile",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CUDA_ENABLE_LINEINFO": "ON"
       }
     }
   ],
@@ -34,6 +45,10 @@
     {
       "name": "debug",
       "configurePreset": "debug"
+    },
+    {
+      "name": "profile",
+      "configurePreset": "profile"
     }
   ]
 }
