@@ -18,6 +18,7 @@
 │   └── cuda_utils.cuh
 ├── scripts/
 │   ├── generate_ptx.sh
+│   ├── generate_sass.sh
 │   ├── profile_ncu.sh
 │   └── run_benchmark.sh
 └── README.md
@@ -155,6 +156,43 @@ cmake --build build/ptx --target vector_add_bench_ptx
 - 看 PTX 时尽量显式指定 `CUDA_PTX_ARCHITECTURE`
 - 和 `-lineinfo` 一起用，方便把 PTX、源码和 `ncu` 结果对上
 - 如果后面你要看更底层的机器码，再补 `cuobjdump` / `nvdisasm` 工作流
+
+## 生成 SASS
+
+每个 benchmark 也会自动带一个同名的 cubin target：
+
+- `vector_add_bench_cubin`
+- `matmul_bench_cubin`
+
+例如生成 `matmul` 的 cubin 和 SASS：
+
+```bash
+cmake -S . -B build/ptx -G Ninja \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCMAKE_CUDA_ARCHITECTURES=80 \
+  -DCUDA_PTX_ARCHITECTURE=80
+./scripts/generate_sass.sh build/ptx matmul_bench
+```
+
+生成结果默认在：
+
+```text
+build/ptx/cubin/matmul_bench.cubin
+build/ptx/sass/matmul_bench.sass
+```
+
+你也可以直接用 CMake target：
+
+```bash
+cmake --build build/ptx --target matmul_bench_cubin
+cmake --build build/ptx --target vector_add_bench_cubin
+```
+
+脚本行为：
+
+- 优先使用 `nvdisasm -g` 生成带源码位置信息的 SASS
+- 如果没有 `nvdisasm`，回退到 `cuobjdump --dump-sass`
+- 适合把源码、PTX、SASS 和 `ncu` 报告对着看
 
 ## 使用 Nsight Compute
 

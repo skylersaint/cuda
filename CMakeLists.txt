@@ -82,7 +82,43 @@ function(add_cuda_ptx_target target_name source_file)
   add_custom_target(${target_name}_ptx DEPENDS ${ptx_output_file})
 endfunction()
 
+function(add_cuda_cubin_target target_name source_file)
+  set(cubin_output_dir "${CMAKE_BINARY_DIR}/cubin")
+  set(cubin_output_file "${cubin_output_dir}/${target_name}.cubin")
+  set(cubin_flags
+    --cubin
+    --std=c++17
+    --expt-relaxed-constexpr
+    -I${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+
+  if(CUDA_ENABLE_FAST_MATH)
+    list(APPEND cubin_flags --use_fast_math)
+  endif()
+
+  if(CUDA_ENABLE_LINEINFO)
+    list(APPEND cubin_flags -lineinfo)
+  endif()
+
+  if(CUDA_PTX_ARCHITECTURE)
+    list(APPEND cubin_flags -arch=sm_${CUDA_PTX_ARCHITECTURE})
+  endif()
+
+  add_custom_command(
+    OUTPUT ${cubin_output_file}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${cubin_output_dir}
+    COMMAND ${CMAKE_CUDA_COMPILER} ${cubin_flags} ${CMAKE_CURRENT_SOURCE_DIR}/${source_file} -o ${cubin_output_file}
+    DEPENDS ${source_file}
+    VERBATIM
+    COMMENT "Generating cubin for ${target_name}"
+  )
+
+  add_custom_target(${target_name}_cubin DEPENDS ${cubin_output_file})
+endfunction()
+
 add_cuda_benchmark(vector_add_bench benchmarks/vector_add_bench.cu)
 add_cuda_benchmark(matmul_bench benchmarks/matmul_bench.cu)
 add_cuda_ptx_target(vector_add_bench benchmarks/vector_add_bench.cu)
 add_cuda_ptx_target(matmul_bench benchmarks/matmul_bench.cu)
+add_cuda_cubin_target(vector_add_bench benchmarks/vector_add_bench.cu)
+add_cuda_cubin_target(matmul_bench benchmarks/matmul_bench.cu)
